@@ -1,0 +1,52 @@
+services:
+  - type: web
+    name: foodflow-ai-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    preDeployCommand: python -m app.db.bootstrap
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: foodflow-ai-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: foodflow-ai-redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://foodflow-ai-web.onrender.com
+      - key: OPENAI_API_KEY
+        sync: false
+
+  - type: web
+    name: foodflow-ai-web
+    runtime: node
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start -- --hostname 0.0.0.0 --port $PORT
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        value: https://foodflow-ai-api.onrender.com
+
+  - type: keyvalue
+    name: foodflow-ai-redis
+    plan: free
+    ipAllowList: []
+
+databases:
+  - name: foodflow-ai-postgres
+    databaseName: foodflow
+    user: foodflow
+    plan: free
