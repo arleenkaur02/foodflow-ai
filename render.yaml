@@ -1,4 +1,4 @@
-  - type: 
+  - type: web
     name: foodflow-ai-web
     runtime: node
     plan: free
